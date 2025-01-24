@@ -1,12 +1,9 @@
-﻿
-;v1 updated by tab nation and tested by mecha, skyler
-;branched from asphaltburger
-; added settings GUI, common fix info, and shake only mode
-;added more settings and bar pixel calc button
-;to add is more settings in GUI, replace tooltips with GUI and let user save changed settings to PC
+
+;added window menu to main GUI
+;small var fixes
 
 ;this will update accross script so only change version here
-version = v1.2
+version := "v1.2"
 
 
 abouttext = 
@@ -22,7 +19,7 @@ This script includes settings GUI, common fix info, and shake only mode. More se
 if !FileExist("macrosave.ini")
 	{
 	IniWrite, Navigation, %a_scriptdir%\macrosave.ini, settings, ShakeMode
-	IniWrite, 5, %a_scriptdir%\macrosave.ini, settings, FishBarColorTolerance
+	IniWrite, 1, %a_scriptdir%\macrosave.ini, settings, ClickShakeColorTolerance
 	IniWrite, 0, %a_scriptdir%\macrosave.ini, settings, ManualBarSize
 	IniWrite, 20, %a_scriptdir%\macrosave.ini, settings, ClickShakeFailsafe
 	IniWrite, 10, %a_scriptdir%\macrosave.ini, settings, BarCalculationFailsafe
@@ -40,11 +37,12 @@ if !FileExist("macrosave.ini")
 	IniWrite, 1.3, %a_scriptdir%\macrosave.ini, settings, dright
 	IniWrite, 1.8, %a_scriptdir%\macrosave.ini, settings, sleft
 	IniWrite, 1.3, %a_scriptdir%\macrosave.ini, settings, dleft
+	IniWrite, 5, %a_scriptdir%\macrosave.ini, settings, FishBarColorTolerance
 	}
 
 ;===================load gui settings===================
 IniRead, ShakeMode, %a_scriptdir%\macrosave.ini, settings, ShakeMode
-IniRead, FishBarColorTolerance, %a_scriptdir%\macrosave.ini, settings, FishBarColorTolerance
+IniRead, ClickShakeColorTolerance, %a_scriptdir%\macrosave.ini, settings, ClickShakeColorTolerance
 IniRead, ManualBarSize, %a_scriptdir%\macrosave.ini, settings, ManualBarSize
 IniRead, ClickShakeFailsafe, %a_scriptdir%\macrosave.ini, settings, ClickShakeFailsafe
 IniRead, BarCalculationFailsafe, %a_scriptdir%\macrosave.ini, settings, BarCalculationFailsafe
@@ -62,6 +60,7 @@ IniRead, sright, %a_scriptdir%\macrosave.ini, settings, sright
 IniRead, dright, %a_scriptdir%\macrosave.ini, settings, dright
 IniRead, sleft, %a_scriptdir%\macrosave.ini, settings, sleft
 IniRead, dleft, %a_scriptdir%\macrosave.ini, settings, dleft
+IniRead, FishBarColorTolerance, %a_scriptdir%\macrosave.ini, settings, FishBarColorTolerance
 
 suspend    ;so hotkeys dont work during GUI
 ;===================setup gui settings===================
@@ -77,15 +76,17 @@ Gui 2:Menu, MyMenuBar
 Gui 2:Add, GroupBox, x22 y8 w317 h190, Shake
 Gui 2: add, Text, x33 y30 w163 h35, Shake Mode
 Gui 2: add, DropDownList, x35 y50 w125 vShakeMode, Navigation|Click
+Gui 2: add, Text, x36 y83 w129 h24, Color Tolerance
+Gui 2: add, Edit, x37 y104 w125 vClickShakeColorTolerance, %ClickShakeColorTolerance%
 
 ;===================bar gui settings===================
 Gui 2:Add, GroupBox, x23 y216 w317 h200 , Bar
-Gui 2: add, Text, x36 y83 w129 h24, Color Tolerance
-Gui 2: add, DropDownList, x37 y104 w125 vFishBarColorTolerance, 5|0|10|15
+Gui 2: add, Text, x200 y305 w129 h24, Color Tolerance
+Gui 2: add, Edit, x200 y320 w125 vFishBarColorTolerance, %FishBarColorTolerance%
 Gui 2: add, Text, x37 y242 w167 h19, Bar Size (0 is auto calc)
 Gui 2: add, Edit, x36 y262 w125  vManualBarSize,%ManualBarSize%
-Gui 2: add, Button, x205 y258 w107 h31 ggetbarpix, Get pix length
-Gui 2: add, Button, x205 y303 w107 h31 gpresets, preset info
+Gui 2: add, Button, x205 y240 w107 h31 ggetbarpix, Get pix length
+Gui 2: add, Button, x205 y270 w107 h31 gpresets, preset info
 Gui 2: add, Text, x38 y136 w123 h23, Click fail safe
 Gui 2: add, Edit, x37 y157 w125  vClickShakeFailsafe , %ClickShakeFailsafe%
 Gui 2: add, Text, x38 y298 w125 h60, Bar fail safe
@@ -101,10 +102,13 @@ Gui 2: add, Edit, x181 y374 w56 vsleft, %sleft%
 Gui 2: add, Text, x255 y358 w63 h18, D left
 Gui 2: add, Edit, x252 y373 w56 vdleft, %dleft%
 
+
+
 ;===================other gui settings===================
 Gui 2: add, Button, x36 y548 w129 h31 ghelpstart, setup tips
 Gui 2: add, Button, x203 y115 w113 h47 gshakeonly, Shake only mode
-Gui 2: add, Button, x116 y596 w125 h47 gstartstart, Start
+Gui 2: add, Button, x190 y596 w125 h47 gstartstart, Start
+Gui 2: add, Button, x50 y596 w125 h47 gsavebutton, Save
 Gui 2: add, Button, x193 y548 w125 h31 gcrabmode, crab mode
 
 Gui 2: add, CheckBox, x23 y417 w169 h43 vAutoEnableCameraMode , Auto enable cam mode
@@ -137,7 +141,6 @@ if (baitdelay = 1) {
 }
 
 
-
 if (ShakeMode = "Click")
 	{
 		GuiControl, 2:Choose, ShakeMode, 2
@@ -145,24 +148,6 @@ if (ShakeMode = "Click")
 else
 	{
 		GuiControl, 2:Choose, ShakeMode, 1
-	}
-
-
-if (FishBarColorTolerance = "5")
-	{
-		GuiControl, 2:Choose, FishBarColorTolerance, 1
-	}
-if (FishBarColorTolerance = "0")
-	{
-		GuiControl, 2:Choose, FishBarColorTolerance, 2
-	}
-if (FishBarColorTolerance = "10")
-	{
-		GuiControl, 2:Choose, FishBarColorTolerance, 3
-	}
-if (FishBarColorTolerance = "15")
-	{
-		GuiControl, 2:Choose, FishBarColorTolerance, 4
 	}
 
 
@@ -174,7 +159,7 @@ gui, 2: submit
 
 ;================================= save gui settings=====================================
 IniWrite, %ShakeMode%, %a_scriptdir%\macrosave.ini, settings, ShakeMode
-IniWrite, %FishBarColorTolerance%, %a_scriptdir%\macrosave.ini, settings, FishBarColorTolerance
+IniWrite, %ClickShakeColorTolerance%, %a_scriptdir%\macrosave.ini, settings, ClickShakeColorTolerance
 IniWrite, %ManualBarSize%, %a_scriptdir%\macrosave.ini, settings, ManualBarSize
 IniWrite, %ClickShakeFailsafe%, %a_scriptdir%\macrosave.ini, settings, ClickShakeFailsafe
 IniWrite, %BarCalculationFailsafe%, %a_scriptdir%\macrosave.ini, settings, BarCalculationFailsafe
@@ -188,10 +173,11 @@ IniWrite, %AutoLowerGraphics%, %a_scriptdir%\macrosave.ini, settings, AutoLowerG
 IniWrite, %AutoZoomInCamera%, %a_scriptdir%\macrosave.ini, settings, AutoZoomInCamera
 IniWrite, %baitdelay%, %a_scriptdir%\macrosave.ini, settings, baitdelay
 
-IniWrite, 2, %a_scriptdir%\macrosave.ini, settings, sright
-IniWrite, 1.3, %a_scriptdir%\macrosave.ini, settings, dright
-IniWrite, 1.8, %a_scriptdir%\macrosave.ini, settings, sleft
-IniWrite, 1.3, %a_scriptdir%\macrosave.ini, settings, dleft
+IniWrite, %sright%, %a_scriptdir%\macrosave.ini, settings, sright
+IniWrite, %dright%, %a_scriptdir%\macrosave.ini, settings, dright
+IniWrite, %sleft%, %a_scriptdir%\macrosave.ini, settings, sleft
+IniWrite, %dleft%, %a_scriptdir%\macrosave.ini, settings, dleft
+IniWrite, %FishBarColorTolerance%, %a_scriptdir%\macrosave.ini, settings, FishBarColorTolerance
 
 
 if (AutoEnableCameraMode)
@@ -1423,4 +1409,28 @@ MenuHandler:
 		Return
 
 	
+savebutton:
+gui, 2: submit, nohide
+;================================= save gui settings=====================================
+IniWrite, %ShakeMode%, %a_scriptdir%\macrosave.ini, settings, ShakeMode
+IniWrite, %ClickShakeColorTolerance%, %a_scriptdir%\macrosave.ini, settings, ClickShakeColorTolerance
+IniWrite, %ManualBarSize%, %a_scriptdir%\macrosave.ini, settings, ManualBarSize
+IniWrite, %ClickShakeFailsafe%, %a_scriptdir%\macrosave.ini, settings, ClickShakeFailsafe
+IniWrite, %BarCalculationFailsafe%, %a_scriptdir%\macrosave.ini, settings, BarCalculationFailsafe
+IniWrite, %NavigationKey%, %a_scriptdir%\macrosave.ini, settings, NavigationKey
+IniWrite, %ManualBarSize%, %a_scriptdir%\macrosave.ini, settings, ManualBarSize
 
+IniWrite, %AutoEnableCameraMode%, %a_scriptdir%\macrosave.ini, settings, AutoEnableCameraMode
+IniWrite, %AutoBlurCamera%, %a_scriptdir%\macrosave.ini, settings, AutoBlurCamera
+IniWrite, %AutoLookDownCamera%, %a_scriptdir%\macrosave.ini, settings, AutoLookDownCamera
+IniWrite, %AutoLowerGraphics%, %a_scriptdir%\macrosave.ini, settings, AutoLowerGraphics
+IniWrite, %AutoZoomInCamera%, %a_scriptdir%\macrosave.ini, settings, AutoZoomInCamera
+IniWrite, %baitdelay%, %a_scriptdir%\macrosave.ini, settings, baitdelay
+
+IniWrite, %sright%, %a_scriptdir%\macrosave.ini, settings, sright
+IniWrite, %dright%, %a_scriptdir%\macrosave.ini, settings, dright
+IniWrite, %sleft%, %a_scriptdir%\macrosave.ini, settings, sleft
+IniWrite, %dleft%, %a_scriptdir%\macrosave.ini, settings, dleft
+IniWrite, %FishBarColorTolerance%, %a_scriptdir%\macrosave.ini, settings, FishBarColorTolerance
+msgbox, saved!
+return
