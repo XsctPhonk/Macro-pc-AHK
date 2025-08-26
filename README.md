@@ -17,3 +17,5 @@ and here is a video on how to install https://youtu.be/Au5BFtpb65o
 - its not perfect at bar game
 - nav mode is best
 - color tol set at 0 means to auto calc the bar game but sometimes is off so just play around with numbers
+
+Thank you to Tabnation for the original repo that i have forked. If you would like to star this repo don't star tabnation's its just as good and original.
